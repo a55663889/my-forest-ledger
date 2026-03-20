@@ -6,198 +6,243 @@
     <title>小森林記帳本 🌿</title>
     <style>
         :root {
-            --bg-color: #F8FAF7;
-            --primary-green: #7BAE7F;
-            --dark-green: #4A6D4C;
-            --accent-gold: #D4AF37;
-            --card-bg: #FFFFFF;
-            --text-main: #2F3E30;
+            --bg: #F3F8F2;
+            --primary: #7BAE7F;
+            --dark: #4A6D4C;
+            --card: #FFFFFF;
+            --text: #2F3E30;
+            --accent: #E9F0E8;
         }
 
         body {
-            font-family: 'PingFang TC', 'Microsoft JhengHei', sans-serif;
-            background-color: var(--bg-color);
-            color: var(--text-main);
-            margin: 0; padding: 20px;
+            font-family: 'PingFang TC', sans-serif;
+            background-color: var(--bg);
+            color: var(--text);
+            margin: 0; padding: env(safe-area-inset-top) 15px 80px 15px;
             display: flex; flex-direction: column; align-items: center;
         }
 
-        /* 頂部日期與標題 */
-        header { text-align: center; margin-bottom: 20px; }
-        #live-clock { font-size: 0.9rem; color: var(--dark-green); margin-top: 5px; }
-        h1 { margin: 0; font-size: 1.5rem; color: var(--dark-green); }
+        /* Header */
+        header { text-align: center; margin: 20px 0; }
+        #clock { font-size: 0.85rem; color: var(--dark); opacity: 0.8; margin-top: 5px; }
+        h1 { margin: 0; font-size: 1.4rem; letter-spacing: 2px; color: var(--dark); }
 
-        /* 分頁切換鈕 */
-        .tab-container {
-            display: flex; background: #E2E8E1; border-radius: 25px;
-            padding: 5px; width: 100%; max-width: 350px; margin-bottom: 20px;
+        /* Tabs */
+        .tab-box {
+            display: flex; background: var(--accent); border-radius: 30px;
+            padding: 5px; width: 100%; max-width: 320px; margin-bottom: 20px;
         }
         .tab-btn {
-            flex: 1; border: none; padding: 10px; border-radius: 20px;
-            background: none; cursor: pointer; transition: 0.3s;
-            font-weight: bold; color: #777;
+            flex: 1; border: none; padding: 12px; border-radius: 25px;
+            background: none; cursor: pointer; font-weight: bold; color: #888;
+            transition: 0.3s;
         }
-        .tab-btn.active { background: var(--primary-green); color: white; }
+        .tab-btn.active { background: var(--primary); color: white; box-shadow: 0 4px 10px rgba(123, 174, 127, 0.3); }
 
-        /* 總金額卡片 */
+        /* Summary Card */
         .summary-card {
-            background: var(--card-bg); width: 100%; max-width: 350px;
-            padding: 20px; border-radius: 20px; box-shadow: 0 4px 15px rgba(0,0,0,0.05);
-            margin-bottom: 20px; border: 1px solid #E9F0E8; position: relative;
-            overflow: hidden;
+            background: var(--card); width: 90%; max-width: 320px;
+            padding: 20px; border-radius: 20px; margin-bottom: 20px;
+            box-shadow: 0 8px 20px rgba(0,0,0,0.03); border: 1px solid white;
         }
-        .summary-card::after {
-            content: "🌿"; position: absolute; right: 10px; bottom: 10px; opacity: 0.2; font-size: 2rem;
-        }
+        .summary-label { font-size: 0.8rem; color: #999; margin-bottom: 5px; }
+        .summary-total { font-size: 1.8rem; font-weight: bold; color: var(--dark); }
 
-        /* 匯率列 */
-        .rate-bar { font-size: 0.8rem; margin-bottom: 10px; color: #888; }
-
-        /* 分類折疊區塊 */
-        .category-group { width: 100%; max-width: 350px; margin-bottom: 10px; }
-        .category-header {
-            background: #EDF3EC; padding: 12px 15px; border-radius: 12px;
-            cursor: pointer; display: flex; justify-content: space-between;
-            font-weight: bold; border-left: 5px solid var(--primary-green);
-        }
-        .category-content { display: none; padding: 10px 5px; }
-        .category-content.active { display: block; }
-
-        /* 品項卡片 */
-        .item-card {
-            background: white; margin-bottom: 8px; padding: 12px;
-            border-radius: 10px; font-size: 0.9rem;
-            box-shadow: 0 2px 5px rgba(0,0,0,0.03);
+        /* Category Accordion */
+        .cate-group { width: 100%; max-width: 350px; margin-bottom: 10px; }
+        .cate-header {
+            background: var(--card); padding: 15px; border-radius: 15px;
             display: flex; justify-content: space-between; align-items: center;
+            cursor: pointer; font-weight: bold; box-shadow: 0 2px 8px rgba(0,0,0,0.02);
         }
-        .status-tag { font-size: 0.7rem; padding: 2px 6px; border-radius: 4px; color: white; }
-        .status-paid { background: #A8C69F; }
-        .status-wait { background: #E6B89C; }
+        .cate-header::before { content: "🍃"; margin-right: 8px; }
+        .cate-content { display: none; padding: 10px 5px; }
+        .cate-content.active { display: block; }
 
-        /* 浮動新增按鈕 */
+        /* Item Style */
+        .item {
+            background: white; padding: 12px; border-radius: 12px; margin-bottom: 8px;
+            display: flex; justify-content: space-between; font-size: 0.9rem;
+            border-left: 4px solid var(--primary);
+        }
+        .item-info span { display: block; font-size: 0.75rem; color: #999; }
+
+        /* Float Button */
         .add-btn {
-            position: fixed; bottom: 30px; right: 30px;
-            width: 60px; height: 60px; background: var(--primary-green);
-            border-radius: 50%; color: white; font-size: 30px;
-            border: none; box-shadow: 0 4px 10px rgba(0,0,0,0.2);
-            cursor: pointer; display: flex; align-items: center; justify-content: center;
+            position: fixed; bottom: 30px; right: 25px;
+            width: 55px; height: 55px; background: var(--dark);
+            border-radius: 50%; color: white; font-size: 28px;
+            border: none; box-shadow: 0 5px 15px rgba(0,0,0,0.2);
+            display: flex; align-items: center; justify-content: center;
         }
 
-        /* 隱藏區塊 */
-        .hidden { display: none !important; }
+        /* Modal Form */
+        #modal {
+            display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+            background: rgba(0,0,0,0.5); z-index: 100; align-items: center; justify-content: center;
+        }
+        .modal-body {
+            background: white; width: 85%; max-width: 320px; padding: 25px;
+            border-radius: 25px; position: relative;
+        }
+        input, select {
+            width: 100%; padding: 12px; margin: 8px 0; border: 1px solid #EEE;
+            border-radius: 10px; box-sizing: border-box; outline: none;
+        }
+        .submit-btn {
+            background: var(--primary); color: white; border: none; width: 100%;
+            padding: 12px; border-radius: 10px; margin-top: 15px; font-weight: bold;
+        }
+
+        .hidden { display: none; }
     </style>
 </head>
 <body>
 
 <header>
     <h1>小森林記帳 🌿</h1>
-    <div id="live-clock">2024年 05月 20日 12:00:00</div>
+    <div id="clock">正在讀取時間...</div>
 </header>
 
-<div class="tab-container">
-    <button class="tab-btn active" onclick="switchTab('merch')">週邊物</button>
-    <button class="tab-btn" onclick="switchTab('topup')">課金命</button>
+<div class="tab-box">
+    <button id="btn-merch" class="tab-btn active" onclick="showPage('merch')">週邊物</button>
+    <button id="btn-topup" class="tab-btn" onclick="showPage('topup')">課金命</button>
 </div>
 
-<div id="merch-page" class="page-content">
+<div id="page-merch" class="page">
     <div class="summary-card">
-    <div class="rate-bar">
-    🍃 即時匯率 1 CNY ≈ <span id="rate-display">...</span> TWD
-    <span style="font-size: 10px; cursor:pointer;" onclick="fetchExchangeRate()">🔄更新</span>
-    </div>
-        <div style="font-size: 0.9rem;">週邊總支出</div>
-        <div style="font-size: 1.8rem; font-weight: bold; color: var(--dark-green);">NT$ <span id="merch-total">0</span></div>
-    </div>
-    
-    <div id="merch-list">
-        <div class="category-group">
-            <div class="category-header" onclick="toggleCategory(this)">
-                <span>📂 預設分類</span>
-                <span>$0</span>
-            </div>
-            <div class="category-content">
-                <p style="text-align:center; color:#ccc;">尚無資料，點擊 + 新增</p>
-            </div>
+        <div class="summary-label">週邊預算總支出 (TWD)</div>
+        <div class="summary-total">NT$ <span id="total-merch">0</span></div>
+        <div style="font-size: 0.7rem; color: #BBB; margin-top:10px;">
+            當前設定匯率：<input type="number" id="manual-rate" value="4.5" style="width:40px; padding:2px; margin:0;" onchange="updateAllPrices()">
         </div>
     </div>
+    <div id="list-merch"></div>
 </div>
 
-<div id="topup-page" class="page-content hidden">
+<div id="page-topup" class="page hidden">
     <div class="summary-card">
-        <div style="font-size: 0.9rem;">課金總支出</div>
-        <div style="font-size: 1.8rem; font-weight: bold; color: #B08968;">NT$ <span id="topup-total">0</span></div>
+        <div class="summary-label">各遊戲總課金 (TWD)</div>
+        <div class="summary-total">NT$ <span id="total-topup">0</span></div>
     </div>
-    <div id="topup-list"></div>
+    <div id="list-topup"></div>
 </div>
 
-<button class="add-btn" onclick="alert('新增功能：請串接表單彈窗或輸入框')">+</button>
+<button class="add-btn" onclick="openModal()">+</button>
+
+<div id="modal" onclick="closeModal(event)">
+    <div class="modal-body" onclick="event.stopPropagation()">
+        <h3 style="margin-top:0; color:var(--dark)">新增紀錄 🍃</h3>
+        <select id="form-type" onchange="toggleFormFields()">
+            <option value="Merch">週邊物</option>
+            <option value="TopUp">課金</option>
+        </select>
+        <input type="text" id="form-name" placeholder="名稱 (例如：立牌 / 640石)">
+        <input type="text" id="form-cate" placeholder="作品或遊戲名稱 (大分類)">
+        
+        <div id="merch-fields">
+            <input type="number" id="form-cny" placeholder="人民幣金額" oninput="autoConvert()">
+            <input type="number" id="form-twd" placeholder="換算台幣 (自動)">
+            <input type="number" id="form-ship" placeholder="運費 (台幣)">
+            <input type="text" id="form-tag" placeholder="標籤 (例如：預售 / 現貨)">
+            <select id="form-status">
+                <option value="未付款">未付款</option>
+                <option value="訂金">訂金</option>
+                <option value="已付款">已付款</option>
+                <option value="已收到">已收到</option>
+            </select>
+        </div>
+
+        <div id="topup-fields" class="hidden">
+            <input type="number" id="form-amount" placeholder="課金台幣金額">
+        </div>
+
+        <button class="submit-btn" onclick="submitData()">確認存入森林 💾</button>
+    </div>
+</div>
 
 <script>
-    // 1. 設定基礎變數
-    let currentRate = 4.5; // 預設匯率，若 API 失效時使用
-    // ⚠️ 請在此處填入你的 Google Apps Script 部署網址
-    const API_URL = https://script.google.com/macros/s/AKfycbzJsYDgrn6_ygBB8NhMcSPkj7nXrJstwernC87coxEWkmsUSsgpbvxJyy1jX-WmMX_2/exec;
-    // 2. 自動抓取即時匯率 (CNY to TWD)
-async function fetchExchangeRate() {
-    try {
-        // 使用免金鑰的公共 API (或是你可以去 ExchangeRate-API 申請免費 Key)
-        const response = await fetch('https://open.er-api.com/v6/latest/CNY');
-        const data = await response.json();
-        
-        if (data && data.rates && data.rates.TWD) {
-            currentRate = data.rates.TWD;
-            document.getElementById('rate-display').innerText = currentRate.toFixed(2);
-            console.log("最新匯率已更新:", currentRate);
-        }
-    } catch (error) {
-        console.error("匯率抓取失敗，使用預設值", error);
-    }
-}
+    // ⚠️ 請修改為你的 Google Apps Script 部署網址
+    const API_URL = "https://script.google.com/macros/s/你的ID/exec"; 
 
-// 3. 換算器功能 (當你在新增品項輸入人民幣時呼叫此函式)
-function convertCNYtoTWD(cnyAmount) {
-    return (cnyAmount * currentRate).toFixed(0); // 四捨五入到整數
-}
+    let currentTab = 'merch';
 
-// 4. 初始化
-window.onload = () => {
-    updateClock();
-    fetchExchangeRate(); // 頁面載入時抓取匯率
-    // fetchAppData();   // 之後用來抓取 Google Sheets 資料
-};
-    // 更新時鐘
+    // 1. 時間顯示
     function updateClock() {
         const now = new Date();
-        const options = { year: 'numeric', month: '2-digit', day: '2-digit', hour: '2-digit', minute: '2-digit', second: '2-digit', hour12: false };
-        document.getElementById('live-clock').innerText = now.toLocaleString('zh-TW', options).replace(/\//g, ' / ');
+        document.getElementById('clock').innerText = now.toLocaleString('zh-TW', { 
+            year:'numeric', month:'2-digit', day:'2-digit', hour:'2-digit', minute:'2-digit', second:'2-digit' 
+        });
     }
     setInterval(updateClock, 1000);
-    updateClock();
 
-    // 切換分頁
-    function switchTab(type) {
-        const btns = document.querySelectorAll('.tab-btn');
-        btns.forEach(b => b.classList.remove('active'));
-        if(type === 'merch') {
-            btns[0].classList.add('active');
-            document.getElementById('merch-page').classList.remove('hidden');
-            document.getElementById('topup-page').classList.add('hidden');
+    // 2. 切換分頁
+    function showPage(type) {
+        currentTab = type;
+        document.querySelectorAll('.page').forEach(p => p.classList.add('hidden'));
+        document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+        document.getElementById('page-' + type).classList.remove('hidden');
+        document.getElementById('btn-' + type).classList.add('active');
+    }
+
+    // 3. 展開收起
+    function toggleCate(el) {
+        el.nextElementSibling.classList.toggle('active');
+    }
+
+    // 4. 彈窗控制
+    function openModal() { document.getElementById('modal').style.display = 'flex'; }
+    function closeModal(e) { document.getElementById('modal').style.display = 'none'; }
+    
+    function toggleFormFields() {
+        const type = document.getElementById('form-type').value;
+        document.getElementById('merch-fields').classList.toggle('hidden', type !== 'Merch');
+        document.getElementById('topup-fields').classList.toggle('hidden', type !== 'TopUp');
+    }
+
+    function autoConvert() {
+        const cny = document.getElementById('form-cny').value;
+        const rate = document.getElementById('manual-rate').value;
+        document.getElementById('form-twd').value = Math.round(cny * rate);
+    }
+
+    // 5. 送出資料
+    async function submitData() {
+        const type = document.getElementById('form-type').value;
+        const btn = document.querySelector('.submit-btn');
+        btn.innerText = "傳送中...";
+        
+        let payload = { type: type };
+        if (type === 'Merch') {
+            payload.name = document.getElementById('form-name').value;
+            payload.cny = document.getElementById('form-cny').value;
+            payload.twd = document.getElementById('form-twd').value;
+            payload.status = document.getElementById('form-status').value;
+            payload.shipping = document.getElementById('form-ship').value || 0;
+            payload.category = document.getElementById('form-cate').value;
+            payload.tag = document.getElementById('form-tag').value;
         } else {
-            btns[1].classList.add('active');
-            document.getElementById('topup-page').classList.remove('hidden');
-            document.getElementById('merch-page').classList.add('hidden');
+            payload.name = document.getElementById('form-name').value;
+            payload.amount = document.getElementById('form-amount').value;
+            payload.game = document.getElementById('form-cate').value;
+        }
+
+        try {
+            await fetch(API_URL, {
+                method: 'POST',
+                mode: 'no-cors',
+                body: JSON.stringify(payload)
+            });
+            alert("成功存入試算表！🌿");
+            location.reload(); // 重新整理讀取新資料
+        } catch (e) {
+            alert("失敗了，請檢查網址或網路");
+            btn.innerText = "確認存入森林 💾";
         }
     }
 
-    // 折疊功能
-    function toggleCategory(el) {
-        const content = el.nextElementSibling;
-        content.classList.toggle('active');
-    }
-
-    // 這裡可以加入 Fetch API 來讀取 Google Sheets 的資料並渲染到畫面上
-    // 範例：fetch(API_URL).then(res => res.json()).then(data => { ...渲染邏輯... });
+    window.onload = updateClock;
 </script>
-
 </body>
+</html>
 </html>
