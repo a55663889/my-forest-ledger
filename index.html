@@ -1,0 +1,171 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>小森林記帳本 🌿</title>
+    <style>
+        :root {
+            --bg-color: #F8FAF7;
+            --primary-green: #7BAE7F;
+            --dark-green: #4A6D4C;
+            --accent-gold: #D4AF37;
+            --card-bg: #FFFFFF;
+            --text-main: #2F3E30;
+        }
+
+        body {
+            font-family: 'PingFang TC', 'Microsoft JhengHei', sans-serif;
+            background-color: var(--bg-color);
+            color: var(--text-main);
+            margin: 0; padding: 20px;
+            display: flex; flex-direction: column; align-items: center;
+        }
+
+        /* 頂部日期與標題 */
+        header { text-align: center; margin-bottom: 20px; }
+        #live-clock { font-size: 0.9rem; color: var(--dark-green); margin-top: 5px; }
+        h1 { margin: 0; font-size: 1.5rem; color: var(--dark-green); }
+
+        /* 分頁切換鈕 */
+        .tab-container {
+            display: flex; background: #E2E8E1; border-radius: 25px;
+            padding: 5px; width: 100%; max-width: 350px; margin-bottom: 20px;
+        }
+        .tab-btn {
+            flex: 1; border: none; padding: 10px; border-radius: 20px;
+            background: none; cursor: pointer; transition: 0.3s;
+            font-weight: bold; color: #777;
+        }
+        .tab-btn.active { background: var(--primary-green); color: white; }
+
+        /* 總金額卡片 */
+        .summary-card {
+            background: var(--card-bg); width: 100%; max-width: 350px;
+            padding: 20px; border-radius: 20px; box-shadow: 0 4px 15px rgba(0,0,0,0.05);
+            margin-bottom: 20px; border: 1px solid #E9F0E8; position: relative;
+            overflow: hidden;
+        }
+        .summary-card::after {
+            content: "🌿"; position: absolute; right: 10px; bottom: 10px; opacity: 0.2; font-size: 2rem;
+        }
+
+        /* 匯率列 */
+        .rate-bar { font-size: 0.8rem; margin-bottom: 10px; color: #888; }
+
+        /* 分類折疊區塊 */
+        .category-group { width: 100%; max-width: 350px; margin-bottom: 10px; }
+        .category-header {
+            background: #EDF3EC; padding: 12px 15px; border-radius: 12px;
+            cursor: pointer; display: flex; justify-content: space-between;
+            font-weight: bold; border-left: 5px solid var(--primary-green);
+        }
+        .category-content { display: none; padding: 10px 5px; }
+        .category-content.active { display: block; }
+
+        /* 品項卡片 */
+        .item-card {
+            background: white; margin-bottom: 8px; padding: 12px;
+            border-radius: 10px; font-size: 0.9rem;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.03);
+            display: flex; justify-content: space-between; align-items: center;
+        }
+        .status-tag { font-size: 0.7rem; padding: 2px 6px; border-radius: 4px; color: white; }
+        .status-paid { background: #A8C69F; }
+        .status-wait { background: #E6B89C; }
+
+        /* 浮動新增按鈕 */
+        .add-btn {
+            position: fixed; bottom: 30px; right: 30px;
+            width: 60px; height: 60px; background: var(--primary-green);
+            border-radius: 50%; color: white; font-size: 30px;
+            border: none; box-shadow: 0 4px 10px rgba(0,0,0,0.2);
+            cursor: pointer; display: flex; align-items: center; justify-content: center;
+        }
+
+        /* 隱藏區塊 */
+        .hidden { display: none !important; }
+    </style>
+</head>
+<body>
+
+<header>
+    <h1>小森林記帳 🌿</h1>
+    <div id="live-clock">2024年 05月 20日 12:00:00</div>
+</header>
+
+<div class="tab-container">
+    <button class="tab-btn active" onclick="switchTab('merch')">週邊物</button>
+    <button class="tab-btn" onclick="switchTab('topup')">課金命</button>
+</div>
+
+<div id="merch-page" class="page-content">
+    <div class="summary-card">
+        <div class="rate-bar">即時匯率 1 CNY ≈ <span id="rate-display">4.5</span> TWD</div>
+        <div style="font-size: 0.9rem;">週邊總支出</div>
+        <div style="font-size: 1.8rem; font-weight: bold; color: var(--dark-green);">NT$ <span id="merch-total">0</span></div>
+    </div>
+    
+    <div id="merch-list">
+        <div class="category-group">
+            <div class="category-header" onclick="toggleCategory(this)">
+                <span>📂 預設分類</span>
+                <span>$0</span>
+            </div>
+            <div class="category-content">
+                <p style="text-align:center; color:#ccc;">尚無資料，點擊 + 新增</p>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div id="topup-page" class="page-content hidden">
+    <div class="summary-card">
+        <div style="font-size: 0.9rem;">課金總支出</div>
+        <div style="font-size: 1.8rem; font-weight: bold; color: #B08968;">NT$ <span id="topup-total">0</span></div>
+    </div>
+    <div id="topup-list"></div>
+</div>
+
+<button class="add-btn" onclick="alert('新增功能：請串接表單彈窗或輸入框')">+</button>
+
+<script>
+    // ⚠️ 請在此處填入你的 Google Apps Script 部署網址
+    const API_URL = https://script.google.com/macros/s/AKfycbzJsYDgrn6_ygBB8NhMcSPkj7nXrJstwernC87coxEWkmsUSsgpbvxJyy1jX-WmMX_2/exec;
+
+    // 更新時鐘
+    function updateClock() {
+        const now = new Date();
+        const options = { year: 'numeric', month: '2-digit', day: '2-digit', hour: '2-digit', minute: '2-digit', second: '2-digit', hour12: false };
+        document.getElementById('live-clock').innerText = now.toLocaleString('zh-TW', options).replace(/\//g, ' / ');
+    }
+    setInterval(updateClock, 1000);
+    updateClock();
+
+    // 切換分頁
+    function switchTab(type) {
+        const btns = document.querySelectorAll('.tab-btn');
+        btns.forEach(b => b.classList.remove('active'));
+        if(type === 'merch') {
+            btns[0].classList.add('active');
+            document.getElementById('merch-page').classList.remove('hidden');
+            document.getElementById('topup-page').classList.add('hidden');
+        } else {
+            btns[1].classList.add('active');
+            document.getElementById('topup-page').classList.remove('hidden');
+            document.getElementById('merch-page').classList.add('hidden');
+        }
+    }
+
+    // 折疊功能
+    function toggleCategory(el) {
+        const content = el.nextElementSibling;
+        content.classList.toggle('active');
+    }
+
+    // 這裡可以加入 Fetch API 來讀取 Google Sheets 的資料並渲染到畫面上
+    // 範例：fetch(API_URL).then(res => res.json()).then(data => { ...渲染邏輯... });
+</script>
+
+</body>
+</html>
