@@ -6,21 +6,50 @@
     <title>小森林記帳本 🌿</title>
     <style>
         /* 載入粉圓體 */
-        @font-face {
-            font-family: 'jf-openhuninn';
-            src: url('https://cdn.jsdelivr.net/gh/justfont/open-huninn-font@1.1/font/jf-openhuninn-1.1.woff2') format('woff2');
-        }
+        /* 1. 使用更穩定的 Google Fonts 代替路徑 (源泉圓體，與粉圓體極度接近且支援度更高) */
+    @import url('https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@400;700&family=ZCOOL+KuaiLe&display=swap');
 
-        :root {
-            --bg: #F3F8F2;
-            --primary: #7BAE7F;
-            --dark: #4A6D4C;
-            --card: #FFFFFF;
-            --text: #2F3E30;
-            --accent: #E9F0E8;
-            --danger: #E68A8A;
-        }
+    /* 2. 直接從 GitHub 再次強制載入粉圓體 */
+    @font-face {
+        font-family: 'jf-openhuninn';
+        src: url('https://cdn.jsdelivr.net/gh/justfont/open-huninn-font@1.1/font/jf-openhuninn-1.1.woff2') format('woff2'),
+             url('https://cdn.jsdelivr.net/gh/justfont/open-huninn-font@1.1/font/jf-openhuninn-1.1.woff') format('woff');
+        font-weight: normal;
+        font-style: normal;
+        font-display: swap; /* 確保字體下載完前先用系統字體，下載完立即切換 */
+    }
 
+    :root {
+        --bg: #F3F8F2;
+        --primary: #7BAE7F;
+        --dark: #4A6D4C;
+        --card: #FFFFFF;
+        --text: #2F3E30;
+        --accent: #E9F0E8;
+        --danger: #E68A8A;
+        /* 設定全域字體變數 */
+        --font-family: 'jf-openhuninn', "Microsoft JhengHei", "微軟正黑體", sans-serif;
+    }
+
+    /* 3. 強制所有元件套用字體 */
+    * {
+        -webkit-tap-highlight-color: transparent;
+        box-sizing: border-box;
+        font-family: var(--font-family) !important; /* 加入 !important 強制覆蓋 */
+    }
+
+    body {
+        background-color: var(--bg);
+        color: var(--text);
+        margin: 0; padding: 20px 15px 100px 15px;
+        display: flex; flex-direction: column; align-items: center;
+        letter-spacing: 0.5px;
+    }
+    
+    /* 確保輸入框也套用 */
+    input, select, button, textarea {
+        font-family: var(--font-family) !important;
+    }
         /* 全域點擊優化 */
         * {
             -webkit-tap-highlight-color: transparent;
