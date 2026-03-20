@@ -105,8 +105,8 @@
 </header>
 
 <div class="tab-box">
-    <button id="btn-merch" class="tab-btn active" onclick="showPage('merch')">週邊物</button>
-    <button id="btn-topup" class="tab-btn" onclick="showPage('topup')">課金命</button>
+    <button id="btn-merch" class="tab-btn active" onclick="showPage('merch')">小廢物</button>
+    <button id="btn-topup" class="tab-btn" onclick="showPage('topup')">課金</button>
 </div>
 
 <div id="page-merch" class="page">
@@ -134,7 +134,7 @@
     <div class="modal-body" onclick="event.stopPropagation()">
         <h3 style="margin-top:0; color:var(--dark)">新增紀錄 🍃</h3>
         <select id="form-type" onchange="toggleFormFields()">
-            <option value="Merch">週邊物</option>
+            <option value="Merch">小廢物</option>
             <option value="TopUp">課金</option>
         </select>
         <input type="text" id="form-name" placeholder="名稱 (例如：立牌 / 640石)">
@@ -162,7 +162,7 @@
 </div>
 
 <script>
-    // ⚠️ 請修改為你的 Google Apps Script 部署網址
+    // ⚠️ 保持你的 API 網址
     const API_URL = "https://script.google.com/macros/s/AKfycbzJsYDgrn6_ygBB8NhMcSPkj7nXrJstwernC87coxEWkmsUSsgpbvxJyy1jX-WmMX_2/exec"; 
 
     let currentTab = 'merch';
@@ -185,12 +185,112 @@
         document.getElementById('btn-' + type).classList.add('active');
     }
 
-    // 3. 展開收起
+    // 3. 抓取並渲染資料
+    async function fetchData() {
+        try {
+            const response = await fetch(API_URL);
+            const data = await response.json();
+            
+            renderMerch(data.merch);
+            renderTopUp(data.topup);
+        } catch (e) {
+            console.error("讀取失敗:", e);
+        }
+    }
+
+    // 渲染週邊 (小廢物)
+    function renderMerch(items) {
+        const listEl = document.getElementById('list-merch');
+        listEl.innerHTML = '';
+        let totalAll = 0;
+        const categories = {};
+
+        items.forEach(item => {
+            const [name, cny, twd, status, ship, cate, tag] = item;
+            if (!categories[cate]) categories[cate] = { list: [], subtotal: 0 };
+            const itemTotal = Number(twd) + Number(ship);
+            categories[cate].list.push({ name, cny, twd, status, ship, tag, itemTotal });
+            categories[cate].subtotal += itemTotal;
+            totalAll += itemTotal;
+        });
+
+        for (let cate in categories) {
+            const group = document.createElement('div');
+            group.className = 'cate-group';
+            group.innerHTML = `
+                <div class="cate-header" onclick="toggleCate(this)">
+                    <span>${cate}</span>
+                    <span>$${categories[cate].subtotal}</span>
+                </div>
+                <div class="cate-content">
+                    ${categories[cate].list.map(i => `
+                        <div class="item">
+                            <div class="item-info">
+                                <strong>${i.name}</strong>
+                                <span>${i.tag} | CNY ${i.cny} (運費$${i.ship})</span>
+                            </div>
+                            <div style="text-align:right">
+                                <div style="font-weight:bold">$${i.itemTotal}</div>
+                                <span class="status-tag" style="background:${getStatusColor(i.status)}; font-size:10px; color:white; padding:2px 5px; border-radius:4px;">${i.status}</span>
+                            </div>
+                        </div>
+                    `).join('')}
+                </div>
+            `;
+            listEl.appendChild(group);
+        }
+        document.getElementById('total-merch').innerText = totalAll.toLocaleString();
+    }
+
+    // 渲染課金
+    function renderTopUp(items) {
+        const listEl = document.getElementById('list-topup');
+        listEl.innerHTML = '';
+        let totalAll = 0;
+        const games = {};
+
+        items.forEach(item => {
+            const [name, amount, gameName] = item;
+            if (!games[gameName]) games[gameName] = { list: [], subtotal: 0 };
+            games[gameName].list.push({ name, amount });
+            games[gameName].subtotal += Number(amount);
+            totalAll += Number(amount);
+        });
+
+        for (let gName in games) {
+            const group = document.createElement('div');
+            group.className = 'cate-group';
+            group.innerHTML = `
+                <div class="cate-header" onclick="toggleCate(this)">
+                    <span>${gName}</span>
+                    <span>$${games[gName].subtotal}</span>
+                </div>
+                <div class="cate-content">
+                    ${games[gName].list.map(i => `
+                        <div class="item">
+                            <span>${i.name}</span>
+                            <span style="font-weight:bold">$${i.amount}</span>
+                        </div>
+                    `).join('')}
+                </div>
+            `;
+            listEl.appendChild(group);
+        }
+        document.getElementById('total-topup').innerText = totalAll.toLocaleString();
+    }
+
+    function getStatusColor(status) {
+        if (status === '已收到') return '#7BAE7F';
+        if (status === '已付款') return '#A8C69F';
+        if (status === '訂金') return '#E6B89C';
+        return '#CCC';
+    }
+
+    // 4. 其他功能 (摺疊、彈窗、送出)
     function toggleCate(el) {
         el.nextElementSibling.classList.toggle('active');
     }
 
-    // 4. 彈窗控制
     function openModal() { document.getElementById('modal').style.display = 'flex'; }
     function closeModal(e) { document.getElementById('modal').style.display = 'none'; }
     
@@ -206,10 +306,10 @@
         document.getElementById('form-twd').value = Math.round(cny * rate);
     }
 
-    // 5. 送出資料
     async function submitData() {
         const type = document.getElementById('form-type').value;
         const btn = document.querySelector('.submit-btn');
+        const oldText = btn.innerText;
         btn.innerText = "傳送中...";
         
         let payload = { type: type };
@@ -233,15 +333,19 @@
                 mode: 'no-cors',
                 body: JSON.stringify(payload)
             });
-            alert("成功存入試算表！🌿");
-            location.reload(); // 重新整理讀取新資料
+            alert("成功存入森林 🌿");
+            location.reload(); 
         } catch (e) {
-            alert("失敗了，請檢查網址或網路");
-            btn.innerText = "確認存入森林 💾";
+            alert("失敗了");
+            btn.innerText = oldText;
         }
     }
 
-    window.onload = updateClock;
+    // 初始化讀取
+    window.onload = () => {
+        updateClock();
+        fetchData();
+    };
 </script>
 </body>
 </html>
