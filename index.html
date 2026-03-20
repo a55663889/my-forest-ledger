@@ -23,12 +23,10 @@
             display: flex; flex-direction: column; align-items: center;
         }
 
-        /* Header & Clock */
         header { text-align: center; margin-bottom: 15px; }
         #clock { font-size: 0.8rem; color: var(--dark); opacity: 0.7; }
         h1 { margin: 5px 0; font-size: 1.3rem; letter-spacing: 1px; color: var(--dark); }
 
-        /* Tabs */
         .tab-box {
             display: flex; background: var(--accent); border-radius: 30px;
             padding: 4px; width: 100%; max-width: 320px; margin-bottom: 15px;
@@ -40,7 +38,6 @@
         }
         .tab-btn.active { background: var(--primary); color: white; box-shadow: 0 4px 10px rgba(123, 174, 127, 0.2); }
 
-        /* Filter Tags */
         #filter-bar {
             display: flex; gap: 8px; overflow-x: auto; width: 100%; 
             padding-bottom: 10px; margin-bottom: 10px; scrollbar-width: none;
@@ -51,7 +48,6 @@
         }
         .tag-pill.active { background: var(--primary); color: white; }
 
-        /* Summary Card */
         .summary-card {
             background: var(--card); width: 100%; max-width: 320px;
             padding: 15px; border-radius: 20px; margin-bottom: 15px;
@@ -60,7 +56,6 @@
         .summary-label { font-size: 0.75rem; color: #999; }
         .summary-total { font-size: 1.6rem; font-weight: bold; color: var(--dark); margin: 5px 0; }
 
-        /* Accordion */
         .cate-group { width: 100%; max-width: 350px; margin-bottom: 10px; }
         .cate-header {
             background: var(--card); padding: 12px 15px; border-radius: 12px;
@@ -70,25 +65,24 @@
         .cate-content { display: none; padding: 8px 0; }
         .cate-content.active { display: block; }
 
-        /* Item Row */
         .item {
             background: white; padding: 12px; border-radius: 12px; margin-bottom: 6px;
             display: flex; justify-content: space-between; align-items: center;
             font-size: 0.85rem; border-left: 4px solid var(--primary);
+            cursor: pointer;
         }
         .item-info strong { display: block; color: var(--dark); }
         .item-info span { font-size: 0.7rem; color: #999; }
-        .delete-icon { color: var(--danger); margin-left: 8px; font-size: 1rem; cursor: pointer; }
+        .delete-icon { color: var(--danger); margin-left: 12px; font-size: 1.2rem; cursor: pointer; padding: 5px; }
 
-        /* Float Button */
         .add-btn {
             position: fixed; bottom: 30px; right: 20px;
             width: 55px; height: 55px; background: var(--dark);
             border-radius: 50%; color: white; font-size: 24px;
             border: none; box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+            z-index: 99;
         }
 
-        /* Modal */
         #modal {
             display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%;
             background: rgba(0,0,0,0.4); z-index: 100; align-items: center; justify-content: center;
@@ -136,11 +130,15 @@
     <div id="list-topup" style="width: 100%;"></div>
 </div>
 
-<button class="add-btn" onclick="openModal()">+</button>
+<button class="add-btn" onclick="openAddModal()">+</button>
 
 <div id="modal" onclick="closeModal(event)">
     <div class="modal-body" onclick="event.stopPropagation()">
-        <h3 style="margin:0 0 10px 0; color:var(--dark)">新增紀錄 🍃</h3>
+        <h3 id="modal-title" style="margin:0 0 10px 0; color:var(--dark)">新增紀錄 🍃</h3>
+        
+        <input type="hidden" id="edit-timestamp">
+        <input type="hidden" id="edit-old-name">
+
         <select id="form-type" onchange="toggleFormFields()">
             <option value="Merch">美麗小廢物</option>
             <option value="TopUp">課金</option>
@@ -159,8 +157,10 @@
             <input type="number" id="form-ship" placeholder="運費 (台幣)">
             <input type="text" id="form-tag" placeholder="標籤 (例如：預售)">
             <select id="form-status">
-                <option value="未付款">未付款</option><option value="訂金">訂金</option>
-                <option value="已付款">已付款</option><option value="已收到">已收到</option>
+                <option value="未付款">未付款</option>
+                <option value="訂金">訂金</option>
+                <option value="已付款">已付款</option>
+                <option value="已收到">已收到</option>
             </select>
         </div>
 
@@ -168,14 +168,15 @@
             <input type="number" id="form-amount" placeholder="課金台幣金額">
         </div>
 
-        <button class="submit-btn" onclick="submitData()">確認存入森林 💾</button>
+        <button class="submit-btn" id="submit-btn-text" onclick="submitData()">確認存入森林 💾</button>
     </div>
 </div>
 
 <script>
-    const API_URL = "https://script.google.com/macros/s/AKfycbyXUwiOQpFd3lwFxxSly2K5ZzGYE3BCQbZA3sdBgGpAyGsmZuGoEXBr5mOyM9kwrk3J/exec"; // ⬅️ 務必修改這裡
+    const API_URL = "https://script.google.com/macros/s/AKfycbyXUwiOQpFd3lwFxxSly2K5ZzGYE3BCQbZA3sdBgGpAyGsmZuGoEXBr5mOyM9kwrk3J/exec";
     let allRawData = { merch: [], topup: [] };
     let activeTag = "全部";
+    let isEditMode = false;
 
     function updateClock() {
         document.getElementById('clock').innerText = new Date().toLocaleString('zh-TW');
@@ -208,7 +209,6 @@
         const filterEl = document.getElementById('filter-bar');
         listEl.innerHTML = '';
         
-        // 更新分類選單與標籤
         let categories = {}, tags = new Set(["全部"]);
         let currentOptions = '<option value="">-- 選擇現有分類 --</option>';
         
@@ -221,16 +221,13 @@
             }
             if (activeTag === "全部" || tag === activeTag) {
                 const sum = Number(twd) + Number(ship);
-                categories[cate].list.push({name, twd, ship, status, tag, ts, sum});
+                categories[cate].list.push({name, cny, twd, ship, status, tag, ts, sum, cate});
                 categories[cate].total += sum;
             }
         });
         selectEl.innerHTML = currentOptions + '<option value="NEW">+ 新增分類...</option>';
-        
-        // 渲染標籤雲
         filterEl.innerHTML = [...tags].map(t => `<div class="tag-pill ${activeTag===t?'active':''}" onclick="filterBy('${t}')">${t}</div>`).join('');
 
-        // 渲染列表
         let grandTotal = 0;
         for (let c in categories) {
             if (categories[c].list.length === 0) continue;
@@ -239,9 +236,12 @@
             div.className = 'cate-group';
             div.innerHTML = `<div class="cate-header" onclick="this.nextElementSibling.classList.toggle('active')"><span>📂 ${c}</span><span>$${categories[c].total}</span></div>
                 <div class="cate-content">${categories[c].list.map(i => `
-                    <div class="item">
+                    <div class="item" onclick="openEditModal('Merch','${i.name}','${i.cate}','${i.cny}','${i.twd}','${i.ship}','${i.tag}','${i.status}','${i.ts}')">
                         <div class="item-info"><strong>${i.name}</strong><span>${i.tag} | $${i.twd}+運${i.ship}</span></div>
-                        <div style="text-align:right"><span class="status-tag" style="background:${getCol(i.status)}">${i.status}</span><br><strong>$${i.sum}</strong><span class="delete-icon" onclick="deleteItem('Merch','${i.name}','${i.ts}')">🗑️</span></div>
+                        <div style="text-align:right; display:flex; align-items:center;">
+                            <div><span class="status-tag" style="background:${getCol(i.status)}">${i.status}</span><br><strong>$${i.sum}</strong></div>
+                            <span class="delete-icon" onclick="event.stopPropagation(); deleteItem('Merch','${i.name}','${i.ts}')">🗑️</span>
+                        </div>
                     </div>`).join('')}</div>`;
             listEl.appendChild(div);
         }
@@ -255,7 +255,7 @@
         items.forEach(i => {
             const [name, amt, gName, ts] = i;
             if (!games[gName]) games[gName] = { list: [], total: 0 };
-            games[gName].list.push({name, amt, ts});
+            games[gName].list.push({name, amt, ts, gName});
             games[gName].total += Number(amt);
             grandTotal += Number(amt);
         });
@@ -264,10 +264,59 @@
             div.className = 'cate-group';
             div.innerHTML = `<div class="cate-header" onclick="this.nextElementSibling.classList.toggle('active')"><span>🎮 ${g}</span><span>$${games[g].total}</span></div>
                 <div class="cate-content">${games[g].list.map(i => `
-                    <div class="item"><span>${i.name}</span><span><strong>$${i.amt}</strong><span class="delete-icon" onclick="deleteItem('TopUp','${i.name}','${i.ts}')">🗑️</span></span></div>`).join('')}</div>`;
+                    <div class="item" onclick="openEditModal('TopUp','${i.name}','${i.gName}','${i.amt}','','','','','${i.ts}')">
+                        <span>${i.name}</span>
+                        <span style="display:flex; align-items:center;"><strong>$${i.amt}</strong><span class="delete-icon" onclick="event.stopPropagation(); deleteItem('TopUp','${i.name}','${i.ts}')">🗑️</span></span>
+                    </div>`).join('')}</div>`;
             listEl.appendChild(div);
         }
         document.getElementById('total-topup').innerText = grandTotal.toLocaleString();
+    }
+
+    function openAddModal() {
+        isEditMode = false;
+        document.getElementById('modal-title').innerText = "新增紀錄 🍃";
+        document.getElementById('submit-btn-text').innerText = "確認存入森林 💾";
+        document.getElementById('form-name').value = "";
+        document.getElementById('form-cny').value = "";
+        document.getElementById('form-twd').value = "";
+        document.getElementById('form-ship').value = "";
+        document.getElementById('form-tag').value = "";
+        document.getElementById('form-amount').value = "";
+        document.getElementById('form-cate-new').value = "";
+        document.getElementById('form-cate-select').value = "";
+        checkNewCate(document.getElementById('form-cate-select'));
+        openModal();
+    }
+
+    function openEditModal(type, name, cate, val1, val2, val3, tag, status, ts) {
+        isEditMode = true;
+        document.getElementById('modal-title').innerText = "編輯紀錄 🌿";
+        document.getElementById('submit-btn-text').innerText = "更新森林資料 🔄";
+        document.getElementById('edit-timestamp').value = ts;
+        document.getElementById('edit-old-name').value = name;
+        document.getElementById('form-type').value = type;
+        document.getElementById('form-name').value = name;
+        
+        const select = document.getElementById('form-cate-select');
+        select.value = cate;
+        if (select.value === "") {
+            select.value = "NEW";
+            document.getElementById('form-cate-new').value = cate;
+        }
+        checkNewCate(select);
+
+        if (type === 'Merch') {
+            document.getElementById('form-cny').value = val1;
+            document.getElementById('form-twd').value = val2;
+            document.getElementById('form-ship').value = val3;
+            document.getElementById('form-tag').value = tag;
+            document.getElementById('form-status').value = status;
+        } else {
+            document.getElementById('form-amount').value = val1;
+        }
+        toggleFormFields();
+        openModal();
     }
 
     async function deleteItem(type, name, ts) {
@@ -292,16 +341,31 @@
     function getCol(s) { return s==='已收到'?'#7BAE7F':s==='已付款'?'#A8C69F':s==='訂金'?'#E6B89C':'#CCC'; }
 
     async function submitData() {
+        const btn = document.getElementById('submit-btn-text');
+        btn.disabled = true;
+        btn.innerText = "傳送中...";
+
         const type = document.getElementById('form-type').value;
         const cate = document.getElementById('form-cate-select').value === 'NEW' ? document.getElementById('form-cate-new').value : document.getElementById('form-cate-select').value;
-        let payload = { type, category: cate, game: cate, action: 'add' };
+        const action = isEditMode ? 'edit' : 'add';
+        const ts = document.getElementById('edit-timestamp').value;
+        const oldName = document.getElementById('edit-old-name').value;
+
+        let payload = { action, type, category: cate, game: cate, timestamp: ts, oldName: oldName };
         if (type === 'Merch') {
             payload = { ...payload, name: document.getElementById('form-name').value, cny: document.getElementById('form-cny').value, twd: document.getElementById('form-twd').value, status: document.getElementById('form-status').value, shipping: document.getElementById('form-ship').value||0, tag: document.getElementById('form-tag').value };
         } else {
             payload = { ...payload, name: document.getElementById('form-name').value, amount: document.getElementById('form-amount').value };
         }
-        await fetch(API_URL, { method: 'POST', mode: 'no-cors', body: JSON.stringify(payload) });
-        alert("存入成功！"); location.reload();
+
+        try {
+            await fetch(API_URL, { method: 'POST', mode: 'no-cors', body: JSON.stringify(payload) });
+            alert(isEditMode ? "修改成功！" : "存入成功！");
+            location.reload();
+        } catch(e) {
+            alert("失敗，請檢查網路");
+            btn.disabled = false;
+        }
     }
 
     window.onload = () => { updateClock(); fetchData(); };
